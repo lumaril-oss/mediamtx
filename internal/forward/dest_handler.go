@@ -165,6 +165,18 @@ func (h *DestHandler) getPos() int {
 	return h.Pos
 }
 
+func (h *DestHandler) setConf(conf conf.ForwardDest) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+	h.Conf = conf
+}
+
+func (h *DestHandler) getConf() conf.ForwardDest {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	return h.Conf
+}
+
 // Log implements logger.Writer.
 func (h *DestHandler) Log(level logger.Level, format string, args ...any) {
 	id := hex.EncodeToString(h.uuid[:4])
@@ -210,7 +222,8 @@ func (h *DestHandler) run(strm *stream.Stream) {
 }
 
 func (h *DestHandler) runOnce(strm *stream.Stream) error {
-	resolvedDest := resolveDest(h.Conf.Dest, h.PathName, h.Matches)
+	destConf := h.getConf()
+	resolvedDest := resolveDest(destConf.Dest, h.PathName, h.Matches)
 
 	var dest Dest
 
@@ -219,7 +232,7 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 		dest = &forwardrtmp.Dest{
 			Stream:          strm,
 			Dest:            resolvedDest,
-			DestFingerprint: h.Conf.DestFingerprint,
+			DestFingerprint: destConf.DestFingerprint,
 			WriteTimeout:    h.WriteTimeout,
 			Parent:          h,
 		}
@@ -228,8 +241,8 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 		dest = &forwardrtsp.Dest{
 			Stream:            strm,
 			Dest:              resolvedDest,
-			DestFingerprint:   h.Conf.DestFingerprint,
-			DestHeaders:       h.Conf.DestHeaders,
+			DestFingerprint:   destConf.DestFingerprint,
+			DestHeaders:       destConf.DestHeaders,
 			ReadTimeout:       h.ReadTimeout,
 			WriteTimeout:      h.WriteTimeout,
 			UDPMaxPayloadSize: h.UDPMaxPayloadSize,
@@ -249,8 +262,8 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 		dest = &forwardmoq.Dest{
 			Stream:            strm,
 			Dest:              resolvedDest,
-			DestFingerprint:   h.Conf.DestFingerprint,
-			Transport:         h.Conf.MoQTransport,
+			DestFingerprint:   destConf.DestFingerprint,
+			Transport:         destConf.MoQTransport,
 			UDPMaxPayloadSize: h.UDPMaxPayloadSize,
 			Parent:            h,
 		}
@@ -259,9 +272,9 @@ func (h *DestHandler) runOnce(strm *stream.Stream) error {
 		dest = &forwardwebrtc.Dest{
 			Stream:            strm,
 			Dest:              resolvedDest,
-			DestFingerprint:   h.Conf.DestFingerprint,
+			DestFingerprint:   destConf.DestFingerprint,
 			ReadTimeout:       h.ReadTimeout,
-			BearerToken:       h.Conf.WHIPBearerToken,
+			BearerToken:       destConf.WHIPBearerToken,
 			UDPMaxPayloadSize: h.UDPMaxPayloadSize,
 			Parent:            h,
 		}

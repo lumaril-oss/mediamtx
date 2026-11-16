@@ -81,9 +81,10 @@ func (m *Manager) ReloadConf(forward conf.Forward) {
 
 	for i, dest := range forward {
 		for j, handler := range m.destHandlers {
-			if !reused[j] && reflect.DeepEqual(handler.Conf, dest) {
+			if !reused[j] && reflect.DeepEqual(handler.Conf.WithoutCredentials(), dest.WithoutCredentials()) {
 				reused[j] = true
 				handler.setPos(i + 1)
+				handler.setConf(dest)
 				newHandlers[i] = handler
 				break
 			}
